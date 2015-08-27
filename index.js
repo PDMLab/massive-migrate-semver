@@ -53,10 +53,10 @@ module.exports.up = function (options, callback) {
                     var sorted = orderMigrations(results);
 
                     if (migrationTableExist) {
-                        db.pgmigration.findOne({version: options.version}, function (err, migration) {
+                        db.pgmigration.findOne({version: options.version}, function (err, exitstingMigration) {
                             if (!err) {
-                                console.log('migration', migration);
-                                if (typeof migration === typeof undefined) {
+                                console.log('migration', exitstingMigration);
+                                if (typeof exitstingMigration === typeof undefined) {
 
                                     console.log(sorted.indexOf(options.version));
 
