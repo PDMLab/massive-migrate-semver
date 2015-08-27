@@ -7,6 +7,35 @@ var parse = serialization.parse;
 var stringify = serialization.stringify;
 var bytewise = require('bytewise-core');
 
+
+function orderMigrations(results) {
+    var migrations = {};
+
+    for (var i = 0; i < results.length; i++) {
+        var splitted = results[i].split('.');
+        for(var j=0;j<splitted.length;j++) {
+            splitted[j] = parseInt(splitted[j])
+        }
+        migrations[results[i]] = splitted
+    }
+
+    var unorderedmigrations = Object.keys(migrations).slice();
+
+    var sorted = [];
+
+    unorderedmigrations.map(function (key) {
+        return migrations[key]
+    })
+        .map(bytewise.encode)
+        .sort(bytewise.compare)
+        .map(bytewise.decode)
+        .forEach(function (v, j) {
+            sorted.push(stringify(v));
+            var x = stringify(v);
+        });
+    return sorted;
+}
+
 module.exports.up = function (options, callback) {
 
     if (semver.valid(options.version)) {
@@ -19,33 +48,9 @@ module.exports.up = function (options, callback) {
                     }
                 }
 
-                var migrations = {};
+
                 fs.readdir(options.migrationsDirectory, function (err, results) {
-                    for (var i = 0; i < results.length; i++) {
-                        var splitted = results[i].split('.');
-                        for(var j=0;j<splitted.length;j++) {
-                            splitted[j] = parseInt(splitted[j])
-                        }
-                        migrations[results[i]] = splitted
-                    }
-
-                    var unorderedmigrations = Object.keys(migrations).slice();
-
-                    var sorted = [];
-
-                    unorderedmigrations.map(function (key) {
-                        return migrations[key]
-                    })
-                        .map(bytewise.encode)
-                        .sort(bytewise.compare)
-                        .map(bytewise.decode)
-                        .forEach(function (v, j) {
-                            sorted.push(stringify(v));
-                            var x = stringify(v);
-                        });
-
-                    console.log('sorted', sorted);
-
+                    var sorted = orderMigrations(results);
 
                     if (migrationTableExist) {
                         db.pgmigration.findOne({version: options.version}, function (err, migration) {
