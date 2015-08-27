@@ -1,0 +1,32 @@
+{
+  "name": "massive-migrate-semver",
+  "version": "0.1.0",
+  "description": "Semantic versioning based migrations for Postgres based on Massive-Migrate",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexZeitler/massive-migrate-semver.git"
+  },
+  "keywords": [
+    "semver",
+    "massive",
+    "postgres"
+  ],
+  "author": "Alexander Zeitler <alexander.zeitler@pdmlab.com>",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/AlexZeitler/massive-migrate-semver/issues"
+  },
+  "homepage": "https://github.com/AlexZeitler/massive-migrate-semver#readme",
+  "dependencies": {
+    "async": "^1.4.2",
+    "bytewise-core": "^1.2.3",
+    "massive": "^2.0.6",
+    "massive-migrate": "^0.1.1",
+    "semver": "^5.0.1",
+    "typewise-semver": "^1.0.0-alpha.0"
+  }
+}
