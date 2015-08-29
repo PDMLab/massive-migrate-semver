@@ -1,8 +1,8 @@
 var semverMigration = require('../index');
 var conn = "postgresql://postgres:postgres@localhost:5432/postgres";
 var migrationsDirectory = __dirname + "/migrations";
-var version = '0.2.0';
-var migrationScript = '0.2.0-up';
+var version = '0.1.0';
+var migrationScript = '0.1.0-up';
 
 var options = {
     connectionString : conn,

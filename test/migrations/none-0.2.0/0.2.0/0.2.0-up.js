@@ -5,9 +5,9 @@ exports.up = function(db, callback) {
         function(cb) {
             db.altercustomertable(function(err, result){
                 if(err) {
-                    console.log('up error while updating customer table: ', err)
+                    console.log('up error while updating customer table: ', err);
+                    cb();
                 }
-                console.log('updated customer table', result);
                 cb()
             });
 

@@ -4,7 +4,8 @@
   "description": "Semantic versioning based migrations for Postgres based on Massive-Migrate",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./test/test.sh",
+    "dockerpostgres": "./test/runpostgrescontainer.sh"
   },
   "repository": {
     "type": "git",
@@ -28,5 +29,9 @@
     "massive-migrate": "^0.1.1",
     "semver": "^5.0.1",
     "typewise-semver": "^1.0.0-alpha.0"
+  },
+  "devDependencies": {
+    "chai": "^3.2.0",
+    "mocha": "^2.2.5"
   }
 }

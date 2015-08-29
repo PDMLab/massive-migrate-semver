@@ -1,11 +1,10 @@
 var semver = require('semver');
-var massive = require('massive');
 var Migration = require('massive-migrate');
 var fs = require('fs');
 var serialization = require('typewise-semver');
-var parse = serialization.parse;
 var stringify = serialization.stringify;
 var bytewise = require('bytewise-core');
+var async = require('async');
 
 
 function orderMigrations(results) {
@@ -13,7 +12,7 @@ function orderMigrations(results) {
 
     for (var i = 0; i < results.length; i++) {
         var splitted = results[i].split('.');
-        for(var j=0;j<splitted.length;j++) {
+        for (var j = 0; j < splitted.length; j++) {
             splitted[j] = parseInt(splitted[j])
         }
         migrations[results[i]] = splitted
@@ -36,10 +35,68 @@ function orderMigrations(results) {
     return sorted;
 }
 
-module.exports.up = function (options, callback) {
+function getAvailableMigrations(migrationsDirectory, callback) {
+    fs.readdir(migrationsDirectory, function (err, results) {
+        callback(orderMigrations(results));
+    });
+}
+
+function applyMigration(db, options, callback) {
+    getAvailableMigrations(options.migrationsDirectory, function(sorted) {
+        db.pgmigration.findOne({version: options.version}, function (err, exitstingMigration) {
+            if (!err) {
+                if (typeof exitstingMigration === typeof undefined) {
+
+
+                    // last migration?
+                    if (sorted.indexOf(options.version) === sorted.length - 1) {
+
+                        db.pgmigration.find({}, function (err, appliedMigrations) {
+                            if (!err) {
+                                if(appliedMigrations.length === 0) {
+
+                                    async.eachSeries(sorted, function(version, cb) {
+                                        var migration = new Migration(
+                                            options.connectionString,
+                                            options.migrationsDirectory,
+                                            version, function () {
+                                                migration.up(version + '-up', cb);
+                                            });
+                                    }, function(err) {
+                                        if(!err) {
+                                            callback();
+                                        }
+                                    });
+
+
+                                }
+
+
+                            }
+                        });
+
+
+                    }
+
+                } else {
+                    console.log('Migration ' + options.version + ' already applied')
+                    callback()
+                }
+            }
+        })
+    });
+
+}
+
+module.exports = {up: up};
+
+function up(options, callback) {
 
     if (semver.valid(options.version)) {
-        massive.connect({connectionString: options.connectionString, scripts: __dirname + '/db'}, function (err, db) {
+        var massive = require('massive');
+        massive.connect({
+            connectionString: options.connectionString, scripts: __dirname + '/db'
+        }, function (err, db) {
             if (!err) {
                 var migrationTableExist = false;
                 for (var i = 0; i < db.tables.length; i++) {
@@ -48,46 +105,27 @@ module.exports.up = function (options, callback) {
                     }
                 }
 
+                if(!migrationTableExist) {
+                    var migration = new Migration(
+                            options.connectionString,
+                            options.migrationsDirectory,
+                            options.version, function () {
+                                massive.connect(db, function(err, db) {
+                                    applyMigration(db, options, callback);
+                                })
+                            });
 
-                fs.readdir(options.migrationsDirectory, function (err, results) {
-                    var sorted = orderMigrations(results);
+                }
+                else {
 
-                    if (migrationTableExist) {
-                        db.pgmigration.findOne({version: options.version}, function (err, exitstingMigration) {
-                            if (!err) {
-                                console.log('migration', exitstingMigration);
-                                if (typeof exitstingMigration === typeof undefined) {
-
-                                    console.log(sorted.indexOf(options.version));
-
-                                    // last migration?
-                                    if(sorted.indexOf(options.version) === sorted.length-1) {
-
-                                        var migration = new Migration(
-                                            options.connectionString,
-                                            options.migrationsDirectory,
-                                            options.version, function () {
-                                                migration.up(options.migrationScript);
-                                            });
-                                    }
-
-                                } else {
-                                    console.log('Migration ' + options.version + ' already applied')
-                                }
-                            }
-                        })
-                    }
-
-
-                });
+                }
+            }
+            else {
+                if (err) throw err;
+                console.log('error: ', err)
 
             }
         });
 
-        if (callback) {
-            callback()
-        }
     }
-
-
 };
