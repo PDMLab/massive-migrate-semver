@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AlexZeitler/massive-migrate-semver.git"
+    "url": "git+https://github.com/PDMLab/massive-migrate-semver.git"
   },
   "keywords": [
     "semver",
@@ -19,9 +19,9 @@
   "author": "Alexander Zeitler <alexander.zeitler@pdmlab.com>",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/AlexZeitler/massive-migrate-semver/issues"
+    "url": "https://github.com/PDMLab/massive-migrate-semver/issues"
   },
-  "homepage": "https://github.com/AlexZeitler/massive-migrate-semver#readme",
+  "homepage": "https://github.com/PDMLab/massive-migrate-semver#readme",
   "dependencies": {
     "async": "^1.4.2",
     "bytewise-core": "^1.2.3",
