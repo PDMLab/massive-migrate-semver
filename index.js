@@ -47,7 +47,6 @@ function applyMigration(db, options, callback) {
             if (!err) {
                 if (typeof exitstingMigration === typeof undefined) {
 
-
                     // last migration?
                     if (sorted.indexOf(options.version) === sorted.length - 1) {
 
@@ -67,17 +66,30 @@ function applyMigration(db, options, callback) {
                                             callback();
                                         }
                                     });
-
-
                                 }
-
-
                             }
                         });
+                    } else {
+                        db.pgmigration.find({}, function (err, appliedMigrations) {
+                            if (!err) {
+                                if(appliedMigrations.length === 0) {
 
-
+                                    async.eachSeries(sorted, function(version, cb) {
+                                        var migration = new Migration(
+                                            options.connectionString,
+                                            options.migrationsDirectory,
+                                            version, function () {
+                                                migration.up(version + '-up', cb);
+                                            });
+                                    }, function(err) {
+                                        if(!err) {
+                                            callback();
+                                        }
+                                    });
+                                }
+                            }
+                        });
                     }
-
                 } else {
                     console.log('Migration ' + options.version + ' already applied')
                     callback()
@@ -117,15 +129,13 @@ function up(options, callback) {
 
                 }
                 else {
-
+                    applyMigration(db, options, callback);
                 }
             }
             else {
                 if (err) throw err;
                 console.log('error: ', err)
-
             }
         });
-
     }
-};
+}
