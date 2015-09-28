@@ -135,8 +135,41 @@ function applyMigration(db, options, callback) {
                                         }
                                     });
                                 } else {
+
                                     // not the last, but there are existing ones
                                     // might be: 0.1.0 already applied, want to apply 0.2.0 and 0.3.0 is also defined.
+                                    async.eachSeries(sorted, function(version, cb) {
+                                        if(semver.lt(version, options.version) && _.any(appliedMigrations, function(m) {
+                                                return m.version === version
+                                            })) {
+                                            // version below and already migrated
+                                            cb()
+                                        } else if (semver.lt(version, options.version) &&
+                                            (!_.any(appliedMigrations, function(m) { return m.version === version}))) {
+                                            // version below but not applied: '
+                                            var m1 = new Migration(
+                                                options.connectionString,
+                                                options.migrationsDirectory,
+                                                version, function () {
+                                                    m1.up(version + '-up', cb);
+                                                });
+                                        } else if (semver.gt(version, options.version)) {
+                                            // version greater must not apply
+                                            cb();
+                                        } else {
+                                            var m2 = new Migration(
+                                                options.connectionString,
+                                                options.migrationsDirectory,
+                                                options.version, function () {
+                                                    m2.up(options.version + '-up', cb);
+                                                });
+                                        }
+
+                                    }, function(err) {
+                                        if(!err) {
+                                            callback();
+                                        }
+                                    });
                                 }
                             }
                         });
