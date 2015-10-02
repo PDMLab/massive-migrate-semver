@@ -1,5 +1,5 @@
 var semver = require('semver');
-var Migration = require('massive-migrate');
+var massiveMigrate = require('massive-migrate');
 var fs = require('fs');
 var serialization = require('typewise-semver');
 var stringify = serialization.stringify;
@@ -42,145 +42,116 @@ function getAvailableMigrations(migrationsDirectory, callback) {
     });
 }
 
-function applyMigration(db, options, callback) {
-    getAvailableMigrations(options.migrationsDirectory, function(sorted) {
-        db.pgmigration.findOne({version: options.version}, function (err, exitstingMigration) {
-            if (!err) {
-                if (typeof exitstingMigration === typeof undefined) {
+function applyMigration(db, migrations, options, callback) {
 
-                    // last migration?
-                    if (sorted.indexOf(options.version) === sorted.length - 1) {
-                        db.pgmigration.find({}, function (err, appliedMigrations) {
-                            if (!err) {
-                                if(appliedMigrations.length === 0) {
+        getAvailableMigrations(options.migrationsDirectory, function(sorted) {
+            migrations.hasUpMigration(options.version, function (err, hasMigration) {
+                if (!err) {
+                    if (!hasMigration) {
 
-                                    async.eachSeries(sorted, function(version, cb) {
-                                        var migration = new Migration(
-                                            options.connectionString,
-                                            options.migrationsDirectory,
-                                            version, function () {
-                                                migration.up(version + '-up', cb);
-                                            });
-                                    }, function(err) {
-                                        if(!err) {
-                                            callback();
-                                        }
-                                    });
+                        // last migration?
+                        if (sorted.indexOf(options.version) === sorted.length - 1) {
+                            db.pgmigration.find({}, function (err, appliedMigrations) {
+                                if (!err) {
+                                    if(appliedMigrations.length === 0) {
+
+                                        async.eachSeries(sorted, function(version, cb) {
+                                                    migrations.runUpMigration({ name: version }, cb);
+
+                                        }, function(err) {
+                                            if(!err) {
+                                                callback();
+                                            }
+                                        });
+                                    } else {
+                                        async.eachSeries(sorted, function(version, cb) {
+                                            if(semver.lt(version, options.version) && _.any(appliedMigrations, function(m) {
+                                                    return m.name === version
+                                                })) {
+                                                // version below and already migrated
+                                                cb()
+                                            } else if (semver.lt(version, options.version) && (!_.any(appliedMigrations, function(m) { return m.name === version}))) {
+                                                // version below but not applied: '
+                                                migrations.runUpMigration({ name : version }, cb);
+                                            } else if (semver.gt(version, options.version)) {
+                                                // version greater must not apply
+                                                cb();
+                                            } else {
+                                                migrations.runUpMigration({ name: options.version }, cb);
+                                            }
+
+                                        }, function(err) {
+                                            if(!err) {
+                                                callback();
+                                            }
+                                        });
+                                    }
                                 } else {
-                                    async.eachSeries(sorted, function(version, cb) {
-                                        if(semver.lt(version, options.version) && _.any(appliedMigrations, function(m) {
-                                                return m.version === version
-                                            })) {
-                                            // version below and already migrated
-                                            cb()
-                                        } else if (semver.lt(version, options.version) && (!_.any(appliedMigrations, function(m) { return m.version === version}))) {
-                                            // version below but not applied: '
-                                            var m1 = new Migration(
-                                                options.connectionString,
-                                                options.migrationsDirectory,
-                                                version, function () {
-                                                    m1.up(version + '-up', cb);
-                                                });
-                                        } else if (semver.gt(version, options.version)) {
-                                            // version greater must not apply
-                                            cb();
-                                        } else {
-                                            var m2 = new Migration(
-                                                options.connectionString,
-                                                options.migrationsDirectory,
-                                                options.version, function () {
-                                                    m2.up(options.version + '-up', cb);
-                                                });
-                                        }
-
-                                    }, function(err) {
-                                        if(!err) {
-                                            callback();
-                                        }
-                                    });
+                                    console.log('error finding applied: ', err)
                                 }
-                            } else {
-                                console.log('error finding applied: ', err)
-                            }
-                        });
+                            });
+                        } else {
+                            db.pgmigration.find({}, function (err, appliedMigrations) {
+                                if (!err) {
+                                    if (appliedMigrations.length === 0) {
+
+                                        async.eachSeries(sorted, function(version, cb) {
+                                            if (semver.lt(version, options.version)) {
+                                                // version below but not applied: '
+                                                migrations.runUpMigration({ name: version }, cb);
+                                            } else if (semver.gt(version, options.version)) {
+                                                // version greater must not apply
+                                                cb();
+                                            } else {
+                                                migrations.runUpMigration({ name : options.version }, cb);
+                                            }
+
+                                        }, function(err) {
+                                            if(!err) {
+                                                callback();
+                                            }
+                                        });
+                                    } else {
+
+                                        // not the last, but there are existing ones
+                                        // might be: 0.1.0 already applied, want to apply 0.2.0 and 0.3.0 is also defined.
+                                        async.eachSeries(sorted, function(version, cb) {
+                                            if(semver.lt(version, options.version) && _.any(appliedMigrations, function(m) {
+                                                    return m.name === version
+                                                })) {
+                                                // version below and already migrated
+                                                cb()
+                                            } else if (semver.lt(version, options.version) &&
+                                                (!_.any(appliedMigrations, function(m) { return m.name === version}))) {
+                                                // version below but not applied: '
+                                                migrations.runUpMigration({ name : version }, cb);
+                                            } else if (semver.gt(version, options.version)) {
+                                                // version greater must not apply
+                                                cb();
+                                            } else {
+                                                migrations.runUpMigration({ name : options.version }, cb);
+                                            }
+
+                                        }, function(err) {
+                                            if(!err) {
+                                                callback();
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
                     } else {
-                        db.pgmigration.find({}, function (err, appliedMigrations) {
-                            if (!err) {
-                                if (appliedMigrations.length === 0) {
-
-                                    async.eachSeries(sorted, function(version, cb) {
-                                        if (semver.lt(version, options.version)) {
-                                            // version below but not applied: '
-                                            var m1 = new Migration(
-                                                options.connectionString,
-                                                options.migrationsDirectory,
-                                                version, function () {
-                                                    m1.up(version + '-up', cb);
-                                                });
-                                        } else if (semver.gt(version, options.version)) {
-                                            // version greater must not apply
-                                            cb();
-                                        } else {
-                                            var m2 = new Migration(
-                                                options.connectionString,
-                                                options.migrationsDirectory,
-                                                options.version, function () {
-                                                    m2.up(options.version + '-up', cb);
-                                                });
-                                        }
-
-                                    }, function(err) {
-                                        if(!err) {
-                                            callback();
-                                        }
-                                    });
-                                } else {
-
-                                    // not the last, but there are existing ones
-                                    // might be: 0.1.0 already applied, want to apply 0.2.0 and 0.3.0 is also defined.
-                                    async.eachSeries(sorted, function(version, cb) {
-                                        if(semver.lt(version, options.version) && _.any(appliedMigrations, function(m) {
-                                                return m.version === version
-                                            })) {
-                                            // version below and already migrated
-                                            cb()
-                                        } else if (semver.lt(version, options.version) &&
-                                            (!_.any(appliedMigrations, function(m) { return m.version === version}))) {
-                                            // version below but not applied: '
-                                            var m1 = new Migration(
-                                                options.connectionString,
-                                                options.migrationsDirectory,
-                                                version, function () {
-                                                    m1.up(version + '-up', cb);
-                                                });
-                                        } else if (semver.gt(version, options.version)) {
-                                            // version greater must not apply
-                                            cb();
-                                        } else {
-                                            var m2 = new Migration(
-                                                options.connectionString,
-                                                options.migrationsDirectory,
-                                                options.version, function () {
-                                                    m2.up(options.version + '-up', cb);
-                                                });
-                                        }
-
-                                    }, function(err) {
-                                        if(!err) {
-                                            callback();
-                                        }
-                                    });
-                                }
-                            }
-                        });
+                        console.log('Migration ' + options.version + ' already applied');
+                        callback()
                     }
-                } else {
-                    console.log('Migration ' + options.version + ' already applied');
-                    callback()
                 }
-            }
-        })
-    });
+            })
+        });
+
+
+
+
 
 }
 
@@ -189,37 +160,24 @@ module.exports = {up: up};
 function up(options, callback) {
 
     if (semver.valid(options.version)) {
-        var massive = require('massive');
-        massive.connect({
-            connectionString: options.connectionString, scripts: __dirname + '/db'
-        }, function (err, db) {
+
+        massiveMigrate({
+            connectionString: options.connectionString,
+            directory: options.migrationsDirectory
+        }, function (err, migrations) {
             if (!err) {
-                var migrationTableExist = false;
-                for (var i = 0; i < db.tables.length; i++) {
-                    if (db.tables[i].name === 'pgmigration') {
-                        migrationTableExist = true;
-                    }
-                }
-
-                if(!migrationTableExist) {
-                    var migration = new Migration(
-                            options.connectionString,
-                            options.migrationsDirectory,
-                            options.version, function () {
-                                massive.connect(db, function(err, db) {
-                                    applyMigration(db, options, callback);
-                                })
-                            });
-
-                }
-                else {
-                    applyMigration(db, options, callback);
-                }
+                var massive = require('massive');
+                massive.connect({
+                    connectionString: options.connectionString, scripts: __dirname + '/db'
+                }, function (err, db) {
+                    applyMigration(db, migrations, options, callback);
+                })
             }
             else {
                 if (err) throw err;
                 console.log('error: ', err)
             }
-        });
+        })
+
     }
 }
