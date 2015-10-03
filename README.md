@@ -10,24 +10,21 @@ npm install massive-migrate-semver --save
 
 ## Usage
 
-Once installed, you can use it by calling the `up` function of the `massive-migrate-Semver` module:
+Once installed, you can use it by calling the `up` function of the `massive-migrate-Semver` modules `semVerMigrations`:
 
 ```js
-var semverMigration = require("massive-migrate-semver");
+var massiveMigrateSemver = require("massive-migrate-semver");
 var conn = "postgresql://postgres:postgres@localhost:5432/postgres";
         var migrationsDirectory = __dirname + "/migrations";
         var version = '0.1.0';
-        var migrationScript = '0.1.0-up';
 
         var options = {
             connectionString: conn,
-            migrationsDirectory: migrationsDirectory,
-            version: version,
-            migrationScript: migrationScript
+            migrationsDirectory: migrationsDirectory
         };
 
-        semverMigration.up(options, function() {
-            massive.connect(database, function(err, db) {
+		 massiveMigrateSemver(options, function(err, semVerMigrations) {
+            semVerMigrations.up({ version: version }, function(err) {
             })
         });
 ```
@@ -85,21 +82,18 @@ To get this working, of course, you need to have both Migration files in place:
 As said, you just have to call the `0.2.0` Migration in your app:
 
 ```js
-var semverMigration = require("massive-migrate-semver");
+var massiveMigrateSemver = require("massive-migrate-semver");
 var conn = "postgresql://postgres:postgres@localhost:5432/postgres";
         var migrationsDirectory = __dirname + "/migrations";
         var version = '0.2.0';
-        var migrationScript = '0.2.0-up';
 
         var options = {
             connectionString: conn,
-            migrationsDirectory: migrationsDirectory,
-            version: version,
-            migrationScript: migrationScript
+            migrationsDirectory: migrationsDirectory
         };
 
-        semverMigration.up(options, function() {
-            massive.connect(database, function(err, db) {
+        massiveMigrateSemver(options, function(err, semVerMigrations) {
+            semVerMigrations.up({ version: version }, function(err) {
             })
         });
 ```
@@ -143,7 +137,6 @@ npm test
 
 ## Nice, but what's missing?
 A lot. Not all semver semantics are currently supported.
-Also you can just start from a plain database with no Migrations applied (this is the 0.1.0 release of Massive-Migrate-Semver, remember).
 Furthermore, down-Migrations are not supported as Massive-Migrate doesn't support them currently).
 And there might be unknown bugs...
 
