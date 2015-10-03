@@ -1,6 +1,6 @@
 {
   "name": "massive-migrate-semver",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Semantic versioning based migrations for Postgres based on Massive-Migrate",
   "main": "index.js",
   "scripts": {
