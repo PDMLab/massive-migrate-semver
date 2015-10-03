@@ -51,7 +51,7 @@ function applyMigration(db, migrations, options, callback) {
 
                         // last migration?
                         if (sorted.indexOf(options.version) === sorted.length - 1) {
-                            db.pgmigration.find({}, function (err, appliedMigrations) {
+                            migrations.getAppliedMigrations(function (err, appliedMigrations) {
                                 if (!err) {
                                     if(appliedMigrations.length === 0) {
 
@@ -91,7 +91,7 @@ function applyMigration(db, migrations, options, callback) {
                                 }
                             });
                         } else {
-                            db.pgmigration.find({}, function (err, appliedMigrations) {
+                            migrations.getAppliedMigrations(function (err, appliedMigrations) {
                                 if (!err) {
                                     if (appliedMigrations.length === 0) {
 
