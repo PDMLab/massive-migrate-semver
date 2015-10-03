@@ -118,6 +118,30 @@ Your `pgmigration` table now looks like this:
 │  <guid>  │   0.2.0   │   0.2.0-up   │    <date>     │
 ```
 
+## Passing custom params to the up script
+If you want to pass custom params to the up script when calling the `up` function, you can do so.
+
+Just apply your custom params to the options object like shown with the `seedTestData` param:
+
+```js
+var massiveMigrateSemver = require("massive-migrate-semver");
+var conn = "postgresql://postgres:postgres@localhost:5432/postgres";
+        var migrationsDirectory = __dirname + "/migrations";
+        var version = '0.1.0';
+
+        var options = {
+            connectionString: conn,
+            migrationsDirectory: migrationsDirectory
+        };
+
+		 massiveMigrateSemver(options, function(err, semVerMigrations) {
+            semVerMigrations.up({ version: version, seedTestData : true }, function(err) {
+            })
+        });
+```
+
+For more details, please take a look at the tests.
+
 ## Running the tests
 You can choose two variants to run the tests: against a local Postgres installation or using Postgres in a Docker container.
 

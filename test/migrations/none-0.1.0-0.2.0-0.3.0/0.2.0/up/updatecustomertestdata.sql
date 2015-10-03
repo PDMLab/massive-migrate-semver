@@ -1,0 +1,1 @@
+UPDATE customer SET active = TRUE WHERE companyname1 = 'PDMLab e.K.';
